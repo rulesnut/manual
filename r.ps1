@@ -320,8 +320,6 @@ Class Dozens {
 ## ▲
 	[Void] SwitchingAuto() {	##	▼ ▼
 		If ( ($this.Gob).Count -ge $this.Tracking ) {
-## What if there is more than 1 that is low????
-## Need percentlo...
 			$HighSpins = $null
 			$MedSpins = $null
 			$LowSpins = $null
