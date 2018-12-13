@@ -348,6 +348,7 @@ Class Dozens {
 					$this.BetHi  = ( $this.BetLo -1)
 				}
 			## added	
+			## added	
 				fff 'minidex is zero'
 				Sleep 2
 			} Elseif  ( $minIndex -eq 1 ) {
