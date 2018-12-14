@@ -1,7 +1,8 @@
 ﻿
 ######## Put is a FileSite to Save to HD
-$FileSite = '888'
+#$FileSite = '888'
 ########
+$FileSite = ''
 
 ##	▼▼	Path Setup
 $DataPath = 'D:\GitHub\manual' ;
@@ -478,7 +479,7 @@ Class Dozens {
 $OB = [Dozens]::new() ; $OB.BetLo  = $OB.OpeningBet ; $OB.BetMed = $OB.OpeningBet ; $OB.BetHi  = $OB.OpeningBet
 While ( 1 ) {
 	Clear-Host ; Write-Host;
-	If (! $FileSite ) { Write-Host -f y  "`n       Not Saving To HD!! `n`n" }
+#	If (! $FileSite ) { Write-Host -f y  "`n       Not Saving To HD!! `n`n" }
 	$OB.BetCount()
 	$OB.Timer( $OB.TimerObj )
 	$OB.Cash()
@@ -497,7 +498,7 @@ While ( 1 ) {
 	$Spin = Read-Host -Prompt "`n`n`n                         Enter Spin"  ## Read-Host
 ##	▼▼	Spin Validation
 	If ( $OB.PercentLimit -lt 30 ) {  ## Like 10 losses in a row 
-		$OB.SwitchingAuto()
+		#$OB.SwitchingAuto()
 	}
 	if ( $Spin -eq 't' -OR $Spin -eq 'tt'  -OR $Spin -eq 'rr' ) { ##	PR = Restart function in profile ....NOT For PRODUCTION
 		Write-Host -f Cyan '    Reloading Powershell' ; sleep 1 ; rr ; exit
