@@ -1,56 +1,94 @@
-﻿$VerbosePreference = "Continue"
-Clear-Host
+﻿Clear-Host
+
 ## Variables
 ##▼▼
 $script:AllowExit		=  $TRUE
 $script:OpeningBet	= 10
 $script:BetZone		= 12
 $script:Units			= 2
-$script:BetLo			= $null
-$script:BetHi			= $null
-$script:BetMed			= $null
+$script:BetMethod		= 'Up2'
+$script:BetL			= $null
+$script:BetLOld		= $null
+$script:BetM			= $null
+$script:BetMOld		= $null
+$script:BetH			= $null
+$script:BetHOld		= $null
+$script:Cash			= $null
+$script:CashOld		= $null
+$script:CashLo			= 0
+$script:CashHi			= 0
 $script:Spin			= $null
 $script:Time			= $null
 $script:ValidSpin		= $null
-$script:WinLose		= $null
 
 $Gob = [system.collections.arrayList] @()
 $Timer =  [system.diagnostics.stopwatch]::startnew()
-$WinLoseRA = [system.collections.arrayList] @()
+$WinRA = [system.collections.arrayList] @()
 
 ##▲
+
 ## Functions
-	## Startup
+
+	## Initialize
 ##▼▼
-Function F-Startup
-{
+Function F-Initialize {
 	If ( $BetZone -eq 12 ) {
-		$BetLo  = $OpeningBet
-		$BetMed = $OpeningBet
-		$BetHi = $null
+		$script:BetLo  = $OpeningBet
+		$script:BetMed = $OpeningBet
+		$script:BetHi  = $null
 	}	Elseif ($Betzone -eq 13 ) {
-		$BetLo  = $OpeningBet
-		$BetMed = $null
-		$BetHi  = $OpeningBet
+		$script:BetLo  = $OpeningBet
+		$script:BetMed = $null
+		$script:BetHi  = $OpeningBet
 	} Else {
-		$BetLo =  $null
-		$BetMed = $OpeningBet
-		$BetHi = $OpeningBet
+		$script:BetLo  = $null
+		$script:BetMed = $OpeningBet
+		$script:BetHi  = $OpeningBet
 	}
 }	##▲	END FUNCTION
 	## Spin Validate
 ##▼▼
-Function F-SpinValidate
-{
+Function F-SpinValidate {
 	If ( $AllowExit ) { If ( $spin -eq 't' -OR $spin -eq 'tt' ) { exit } }
 	If ( $spin -match '^[0-9]$' -OR $spin -match '^[1-2][0-9]$' -OR $spin -match '^[3][0-6]$' )  {
-	} Else { Write-Host -f Red " [ NOT VALID NUMBER ]"  ; Start-Sleep -m 500  ; Clear-Host ; Continue 	}
+#		$script:ValidSpin = 1 ;
+	} Else {
+		Write-Host -f Red " [ NOT VALID NUMBER ]"  ;
+		Start-Sleep -m .7500 ;
+		Start-Sleep 2 ;
+		Clear-Host ;
+		Continue ;
+			
+	}
+#	} Else { $script:ValidSpin = 0; Write-Host -n  -f Red " [ NOT VALID NUMBER ]"  ; Start-Sleep -m 500  ; Continue ; }
+	#} Else { $script:ValidSpin = 0; Write-Console -n  -f Red " [ NOT VALID NUMBER ]"  ; Start-Sleep -m 500  ;  BREAK; }
+#	} Else { $script:ValidSpin = 0;  Start-Sleep -m 500  ; Continue ; }
+#	Return $script:ValidSpin
 }	##▲	END FUNCTION
 	## Update
-##▼▼
-Function F-Update
-{
-	Param ()	
+##▼ ▼
+Function F-Update {
+	## WinOrLose
+	##▼▼
+	Switch ( $Gob[-1] ) {
+		{ $_ -in 0 } { [void] $WinRA.Add('LZ') ; BREAK }  ##	Spin 0
+		{ $_ -in 1..12 } {  ##	Spin Lo
+			If ( $BetZone -eq 12 ) { [void] $WinRA.Add('W12Lo') ; BREAK }
+			If ( $BetZone -eq 13 ) { [void] $WinRA.Add('W13Lo') ; BREAK }
+			If ( $BetZone -eq 23 ) { [void] $WinRA.Add('L23Lo') ; BREAK }
+		}
+		{ $_ -in 13..24 } { ##	Spin Med
+			If ( $BetZone -eq 12 ) { [void] $WinRA.Add('W12Med') ; BREAK }
+			If ( $BetZone -eq 13 ) { [void] $WinRA.Add('L13Med') ; BREAK }
+			If ( $BetZone -eq 23 ) { [void] $WinRA.Add('W23Med') ; BREAK }
+		}
+		{ $_ -in 25..36 } { ##	Spin Hi
+			If ( $BetZone -eq 12 ) { [void] $WinRA.Add('L12Hi') ; BREAK }
+			If ( $BetZone -eq 13 ) { [void] $WinRA.Add('W13Hi') ; BREAK }
+			If ( $BetZone -eq 23 ) { [void] $WinRA.Add('W23Hi') ; BREAK }
+		}
+	}##	END Switch
+	##▲	END WinOrLose
 	## Time
 	##▼▼
 	$hrs  = '{0:0}' -f ($Timer.Elapsed.Hours)
@@ -58,163 +96,95 @@ Function F-Update
 	$mins = '{0:00}' -f $Timer.Elapsed.Ticks
 	$Time =  ('{0}:{1}' -f $hrs,$mins )
 	##	▲	END Time
-	## WinOrLose
+	## Cash
 	##▼▼
-	Switch ( $Gob[-1] ) {
-		{ $_ -in 0 } { [void] $WinLoseRA.Add('Z') ; $WinLose = 'L' ; BREAK }  ##	Spin 0
-		{ $_ -in 1..12 } {  ##	Spin Lo
-			[void] $WinLoseRA.Add('L')
-			If  ( $BetZone -eq 12 ) { $WinLose = 'W12'; BREAK }
-			Elseif ( $BetZone -eq 13 ) { $WinLose = 'W13' ; BREAK }
-			Else { $WinLose = 'L'; BREAK }
-		}
-		{ $_ -in 13..24 } { ##	Spin Med
-			[void] $WinLoseRA.Add('M') ;
-			If  ( $BetZone -eq 12 ) { $WinLose = 'W12' }
-			Elseif ( $BetZone -eq 13 ) { $WinLose = 'L' }
-			Else {$WinLose = 'W23'; BREAK }
-		}
-		{ $_ -in 25..36 } { ##	Spin Hi
-			[void] $WinLoseRA.Add('H') ;
-			If  ( $BetZone -eq 12 ) { $WinLose = 'L' }
-			Elseif ( $BetZone -eq 13 ) { $.WinLose = 'W13' }
-			Else {$WinLose = 'W23'; BREAK }
-		}
-	}##	END Switch
-	##▲	END WinOrLose
-
-
-
-
-
-
-	##▲	END WinOrLose
-	## NEW
-##▼▼
-Function F-NEW
-{
-[CmdletBinding( SupportsShouldProcess=$True ) ]
-	Param ()
-	Begin{}
-	Process{
+		$script:CashOld = $script:Cash
+	If ( $WinRA[-1].Substring(0,1)-eq 'L' ){
+		$script:Cash = $script:Cash - ($BetLo + $BetMed + $BetHi)
+	} Else {
+		$script:Cash = $script:Cash + ( ($BetLo + $BetMed + $BetHi )  / 2  )
 	}
-	End{}
-}##▲	END FUNCTION
-}	##▲	END FUNCTION
+	If ( $script:Cash -le $script:CashLo ) {
+		$script:CashLo = $Script:Cash
+	} ElseIf ( $script:Cash -gt $script:CashHi ) {
+		$script:CashHi = $script:Cash
+	}	
+	##	▲	END Cash
+	## Bets
+	##▼ ▼
+	$script:BetLold = $BetLo
+	$script:BetMold = $BetMed
+	$script:BetHold = $BetHi
+	If ( $BetMethod -eq 'Up2') {
+	
+		
+	}
 
-F-Startup
 
+
+## YOU ARE HERE!!!  `h 
+
+
+	##	▲	END Bets
+	
+	
+	
+}	##▲	END F-Update
+
+	## Display
+##▼ ▼
+Function F-Display {
+	If ($Gob.count -gt 0 ) {
+		Write-Host -f DarkGray "01234567890123456789012345678901234567890123456789012345"
+		##	Bet Number
+		$gap = [Math]::Floor([Math]::Log10( $Gob.count ) + 1)
+		Write-Host -n -f DarkGray "`n  Bet #"
+		Write-Host -n $(" " * (5-$gap))
+		Write-Host -n -f DarkGray $Gob.count
+		##	Time
+		Write-Host -n  $(" " * 7 )
+		Write-Host -n -f DarkGray "Time: "
+		$hrs  = '{0:0}' -f ($Timer.Elapsed.Hours)
+		$mins = '{0:00}' -f $Timer.Elapsed.Minutes
+		Write-Host ('{0}:{1}' -f $hrs,$mins ) -nonewline -f DarkGray
+		##	Cash
+		Write-Host -n -f DarkGray "        Cash: "
+		$_cash = '{0:C0}' -f ($Cash)
+		$gap = $_cash.length
+		Write-Host -n  $(" " * (7-$gap))
+		If ( $Cash -ge 0 ) { Write-Host -f Green $_cash } Else { Write-Host -f Red $_cash }
+		## CashLo/CashHigh
+		Write-host -n -f DarkGray `n'  Low: '
+		$_cashlo = '{0:C0}' -f $CashLo
+		$_cashhi = '{0:C0}' -f $CashHi
+		Write-host -n -f DarkGray $_cashlo
+		$gap = [Math]::Floor([Math]::Log10( $_cashlo.Length ) + 1 )
+		Write-Host -n  $(" " * (7-$gap))
+		Write-host -n -f DarkGray '  High: '
+		Write-host  -f DarkGray $_cashhi
+
+	}##▲	GREATER THAN 0
+
+}##▲	END Display
+
+
+## Start Main
+F-Initialize
 While (1) {
-	If ( $Gob.count -eq 0 ) { Write-Host  "`n BetZone: $BetZone  Units: $Units	Inital Bet: $OpeningBet`n" }
-	$Spin  = Read-Host -Prompt "$("`n" * 4 ) $(" " * (10)) Enter Spin"
+	If ( $Gob.count -eq 0 ) { Write-Host  "`n BetZone: $BetZone  Units: $Units	Inital Bet: $OpeningBet"
+	} Else {
+	 F-Display
+	}
+	$Spin  = Read-Host -Prompt "`n`n`n$(" " * (10)) Enter Spin"
 	F-SpinValidate
-	[Void] $Gob.Add( $Spin )
 	Clear-Host
+	[Void] $Gob.Add( $Spin )
 	F-UpDate
-}	
+}
 
+#TODO mm
 
 ## Make this into one program
-
-#	F-Update
-	##	Above the Line
-#	$_betlo = '{0:0}' -f $BetLo
-
-#	fff 'here1'
-#	fff $BetLo
-#	Write-Host -n -f Darkgray  $_betlo
-#	Write-Host -n -f Darkgray  $Betlo
-#	sleep 2
-#	$gap = [Math]::Floor([Math]::Log10( $Gob.Count ) + 1 ) }
-#	Write-Host -n -f Darkgray  " Bet: "
-
-	
-	
-	## I want to find the updated cash 
-   ## Before I can do that I need to know if I won or lost
-
-
-<#
-		##	WinOrLose
-		## ▼▼
-		Switch ( $this.Gob[-1] ) {
-			{ $_ -in 0 } { $this.lmhRA.Add('Z') ; $this.WinLose = 'L' ; BREAK }  ##	Spin 0
-			{ $_ -in 1..12 } {  ##	Spin Lo
-				$this.lmhRA.Add('L') ;
-				If  ( $this.BetZone -eq 12 ) { $this.WinLose = 'W12'; BREAK }
-				Elseif ( $this.BetZone -eq 13 ) { $this.WinLose = 'W13' ; BREAK }
-				Else { $this.WinLose = 'L'; BREAK }
-			}
-			{ $_ -in 13..24 } { ##	Spin Med
-				$this.lmhRA.Add('M') ;
-				If  ( $this.BetZone -eq 12 ) { $this.WinLose = 'W12' }
-				Elseif ( $this.BetZone -eq 13 ) { $this.WinLose = 'L' }
-				Else {$this.WinLose = 'W23'; BREAK }
-			}
-			{ $_ -in 25..36 } { ##	Spin Hi
-				$this.lmhRA.Add('H') ;
-				If  ( $this.BetZone -eq 12 ) { $this.WinLose = 'L' }
-				Elseif ( $this.BetZone -eq 13 ) { $this.WinLose = 'W13' }
-				Else {$this.WinLose = 'W23'; BREAK }
-			}
-		}##	END Switch
-		$this.WinsRA += $this.WinLose
-			## ▲
-#>
-
-
-#Write-Host -f y `n`n`n 'Timer: ' $Timer.ElapsedMilliSeconds 'ms'`n`n`n
-
-
-	Write-Host -f darkGreen '  Lo         Med         Hi     '
-	fff $Gob.Count
-
-
-#TODO
-
-
-#	Write-Host -n " " $BetLo
-#	If ( $BetLo -eq $null ) { $gap = 0 } Else { $gap = [Math]::Floor([Math]::Log10( $BetLo ) + 1 ) }
-#	Write-host -n $( " " * ( 11 - $gap ) )
-#	Write-Host -n $BetMed
-#	If ( $BetMed -eq $null ) { $gap = 0 } Else { $gap = [Math]::Floor([Math]::Log10( $BetMed ) + 1 ) }
-#	Write-host -n $( " " * ( 12 - $gap ) )
-#	Write-Host -n $BetHi
-
-
-
-#33	F-SpinValidate
-
-	#Write-Host "Gary"
-  # Write-Host -f y `n`n`n 'Timer: ' $Timer.ElapsedMilliSeconds 'ms'`n`n`n
-  # Sleep 5
-
-
-
-#Write-Host -f y `n`n`n 'Timer: ' $Timer.ElapsedMilliSeconds 'ms'`n`n`n
-
-
-
-#		If ( $.BetLo  -eq  $null )  { $gapL = 0 } Else { $gapL = [Math]::Floor([Math]::Log10($.BetLo) + 1) }
-
-#		If ( $.BetMed -eq  $null )  { $gapM = 0 } Else { $gapM = [Math]::Floor([Math]::Log10($.BetMed) + 1) }
-#		If ( $.BetHi  -eq  $null )  { $gapH = 0 } Else { $gapH = [Math]::Floor([Math]::Log10($.BetHi) + 1) }
-#		$.BetSizePrevious = ( $.BetLo + $.BetMed + $.BetHi ) / 2
-#		Write-Host -f darkcyan "  Lo     Med     Hi"
-#		Write-Host -n " " $($BetLo)
-#		Write-host -n $(" " * (7-$gapL))
-#		Write-Host -n $($BetMed)
-#		Write-host -n $(" " * (8-$gapM))
-#		Write-Host -n $($BetHi)
-
-
-
-
-
-
-
-
-
 
 
 
